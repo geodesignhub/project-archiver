@@ -1,5 +1,5 @@
 {
-  "serviceurl": "https://www.geodesignhub.com/api/v1/",
-  "projectid": "W2DkEut25Ptz2apP",
-  "apitoken": "bJ6qR2nCCbbYdP6ZXcBFxGjV6SY2ttXQ"
+  "service_url": "https://www.geodesignhub.com/api/v1/",
+  "project_ids": ["W2DkEut25Ptz2apP"],
+  "api_token": "bJ6qR2nCCbbYdP6ZXcBFxGjV6SY2ttXQ"
 }

@@ -1,6 +1,6 @@
 import requests, json
 
-# Version: 1.2.4
+# Version: 1.2.5
 
 class GeodesignHubClient():
 	'''

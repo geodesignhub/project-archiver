@@ -1,6 +1,6 @@
 import requests, json
 
-# Version: 1.2.3
+# Version: 1.2.4
 
 class GeodesignHubClient():
 	'''
@@ -18,6 +18,12 @@ class GeodesignHubClient():
 		self.securl = url if url else 'https://www.geodesignhub.com/api/v1/'		
 		self.session = requests.Session()
 
+	def get_project_id(self):
+		''' This method gets all systems for a particular project.  '''
+		securl = self.securl+ 'projects'+ '/' + self.projectid + '/'
+		headers = {'Authorization': 'Token '+ self.token}
+		r = self.session.get(securl, headers=headers)
+		return r
 	def get_all_systems(self):
 		''' This method gets all systems for a particular project.  '''
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'systems' + '/'
@@ -67,7 +73,7 @@ class GeodesignHubClient():
 		r = self.session.get(securl, headers=headers)
 		return r
 
-	def get_single_design_team(self, teamid):
+	def get_all_details_for_design_team(self, teamid):
 		''' Return all the synthesis in the change team.  '''
 		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'cteams' + '/'+ str(teamid) +'/'
@@ -75,9 +81,17 @@ class GeodesignHubClient():
 		r = self.session.get(securl, headers=headers)
 		return r
 		
-	def get_all_synthesis_for_team(self, teamid, synthesisid):
+	def get_single_synthesis(self, teamid, synthesisid):
 		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
+		assert len(synthesisid)  == 16, "Synthesis : %s" % synthesisid
 		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/'
+		headers = {'Authorization': 'Token '+ self.token}
+		r = self.session.get(securl, headers=headers)
+		return r
+
+	def get_single_synthesis_diagrams(self, teamid, synthesisid):
+		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/diagrams/'
 		headers = {'Authorization': 'Token '+ self.token}
 		r = self.session.get(securl, headers=headers)
 		return r

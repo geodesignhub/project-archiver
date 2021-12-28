@@ -58,12 +58,12 @@ if __name__ == "__main__":
     project_ids = c['project_ids']
     for project_id in project_ids:
 
-      my_api_helper = GeodesignHub.GeodesignHubClient(url = c['service_url'], project_id= c['project_id'], token=c['api_token'])
+      my_api_helper = GeodesignHub.GeodesignHubClient(url = c['service_url'], project_id= project_id, token=c['api_token'])
       # make project folder
-      project_directory = Path("output", c['project_id'])
+      project_directory = Path("output", project_id)
       project_directory.mkdir(parents=True, exist_ok=True)
 
-      zip_file_name = c['project_id']
+      zip_file_name = project_id
       zip_file_directory = Path("output", zip_file_name)
 
       # Get all Systems

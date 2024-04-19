@@ -6,6 +6,7 @@ __pycache__/
 .DS_Store
 logs/
 output/
+upload_data/
 
 # C extensions
 *.so
@@ -128,3 +129,4 @@ dmypy.json
 
 config.json
 *.zip
+ext_diagrams.csv

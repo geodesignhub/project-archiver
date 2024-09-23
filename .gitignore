@@ -7,7 +7,7 @@ __pycache__/
 logs/
 output/
 upload_data/
-
+*.csv
 # C extensions
 *.so
 

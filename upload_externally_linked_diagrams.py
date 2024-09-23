@@ -77,7 +77,8 @@ if __name__ == "__main__":
 
             # print(description, feature_type, funding_type, flat_geobuf_url, project_or_policy)
             response = my_api_helper.post_as_diagram_with_external_geometries(
-                flat_geobuf_url=flat_geobuf_url,
+                url=flat_geobuf_url,
+                layer_type="fgb-layer",
                 projectorpolicy=project_or_policy,
                 featuretype=feature_type,
                 description=description,

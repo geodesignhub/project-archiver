@@ -6,7 +6,8 @@ import logging
 import logging.handlers
 from json.decoder import JSONDecodeError
 from pathlib import Path
-
+from io import StringIO
+import uuid
 
 class ScriptLogger:
     def __init__(self):
@@ -32,55 +33,61 @@ class ScriptLogger:
         self.logger.addHandler(self.handler)
         self.logger.setLevel(self.logging_level)
 
-    def getLogger(self):
+    def get_logger(self):
         return self.logger
 
 
 if __name__ == "__main__":
 
     myLogger = ScriptLogger()
-    logger = myLogger.getLogger()
+    logger = myLogger.get_logger()
     session = requests.Session()
     logger.info("Starting job")
 
+    logger.info("Attempting to read configuration file: config.json")
     try:
         with open("config.json") as config:
             c = json.load(config)
-    except JSONDecodeError as je:
-        print("Error reading config file")
-        logger.info("Error reading config file")
+        logger.info("Configuration file loaded successfully")
+    except JSONDecodeError as je:        
+        logger.error(f"Error decoding JSON from config file: {je}")
         sys.exit(1)
-
-    except Exception as e:
-        print("Error reading config file")
-        logger.error("Error reading config file")
+    except Exception as e:        
+        logger.error(f"Error reading config file: {e}")
         sys.exit(1)
-
-    try:
-        assert c.keys() == set(["service_url", "project_ids", "api_token"])
-    except AssertionError as ae:
-        logger.error("Error in config file parameters")
-        sys.exit(1)
+        logger.info("Validating configuration file parameters")
+        try:
+            assert c.keys() == set(["service_url", "project_ids", "api_token"])
+            logger.info("Configuration file parameters validated successfully")
+        except AssertionError as ae:
+            logger.error("Error in config file parameters")
+            sys.exit(1)
 
     project_ids = c["project_ids"]
     for project_id in project_ids:
         my_api_helper = GeodesignHub.GeodesignHubClient(
             url=c["service_url"], project_id=project_id, token=c["api_token"]
         )
+        # make output directory if it doesn't exist
+        output_directory = Path("output")
+        output_directory.mkdir(parents=True, exist_ok=True)
+
         # make project folder
-        project_directory = Path("output", project_id)
+        project_directory = output_directory / project_id
         project_directory.mkdir(parents=True, exist_ok=True)
 
         zip_file_name = project_id
-        zip_file_directory = Path("output", zip_file_name)
+        zip_file_directory = output_directory / zip_file_name
 
         # Get all Systems
-        all_projects_response = my_api_helper.get_project_id()
+        all_projects_response = my_api_helper.get_project_details()
+        
         if all_projects_response.status_code == 200:
             all_project_details = all_projects_response.json()
 
-            print("Project data downloaded")
-            df = pd.read_json(json.dumps(all_project_details), typ="series")
+
+            logger.info("Project data downloaded")
+            df = pd.read_json(StringIO(json.dumps(all_project_details)), typ="series")            
             logger.info("Writing Project data file to disk..")
             df.to_csv(Path.joinpath(project_directory, "project.csv"))
             logger.info("Project data file written")
@@ -107,8 +114,9 @@ if __name__ == "__main__":
                 else:
                     all_system_details.append(system_detail_response.json())
 
-            print("Systems data downloaded")
-            df = pd.read_json(json.dumps(all_system_details))
+            logger.info("Systems data downloaded")
+            df = pd.read_json(StringIO(json.dumps(all_system_details)))
+            df["Global_ID"] = [str(uuid.uuid4()) for _ in range(len(df))]
             logger.info("Writing Systems file to disk..")
             df.to_csv(Path.joinpath(project_directory, "systems.csv"))
             logger.info("Systems file written")
@@ -122,8 +130,9 @@ if __name__ == "__main__":
         all_diagrams_response = my_api_helper.get_all_diagrams()
         if all_diagrams_response.status_code == 200:
             all_diagrams = all_diagrams_response.json()
-            print("Diagrams data downloaded")
-            df = pd.read_json(json.dumps(all_diagrams))
+            logger.info("Diagrams data downloaded")
+            df = pd.read_json(StringIO(json.dumps(all_diagrams)))
+            df["Global_ID"] = [str(uuid.uuid4()) for _ in range(len(df))]
 
             logger.info("Writing diagrams to disk..")
             df.to_csv(Path.joinpath(project_directory, "diagrams.csv"))
@@ -154,8 +163,8 @@ if __name__ == "__main__":
                 else:
                     all_design_team_details.append(design_team_detail_response.json())
 
-            print("Design Team data downloaded")
-            df = pd.read_json(json.dumps(all_design_team_details))
+            logger.info("Design Team data downloaded")
+            df = pd.read_json(StringIO(json.dumps(all_design_team_details)))        
             logger.info("Writing  Design Team file to disk..")
             df.to_csv(Path.joinpath(project_directory, "design_teams.csv"))
             logger.info(" Design Team file written")
@@ -190,13 +199,13 @@ if __name__ == "__main__":
                     synthesis_and_diagrams = synthesis_digrams_response.json()
                     synthesis_and_diagrams["description"] = synthesis_name
                     all_design_syntheses_and_diagrams.append(synthesis_and_diagrams)
-
-        df = pd.read_json(json.dumps(all_design_syntheses_and_diagrams))
+        
+        df = pd.read_json(StringIO(json.dumps(all_design_syntheses_and_diagrams)))
         logger.info("Writing  Design Team data file to disk..")
-
+        df["Global_ID"] = [str(uuid.uuid4()) for _ in range(len(df))]
         df.to_csv(Path.joinpath(project_directory, "design_syntheses.csv"))
         logger.info("Design Team file written")
-        print("Design Team and diagrams written")
+        logger.info("Design Team and diagrams written")
 
         shutil.make_archive(Path("output", zip_file_name), "zip", zip_file_directory)
         shutil.rmtree(project_directory)

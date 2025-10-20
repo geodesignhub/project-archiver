@@ -4,7 +4,8 @@ from urllib.parse import urljoin, urlparse
 from os.path import join
 from typing import Optional, Dict, Any
 
-# Version: 1.5.0
+# Version: 1.5.2
+
 
 class GeodesignHubClient:
     def __init__(self, token: str, url: Optional[str] = None, project_id: str = ""):
@@ -16,8 +17,8 @@ class GeodesignHubClient:
         self.session.headers.update({"Authorization": f"Token {self.token}"})
 
     def _build_url(self, *parts):
-        url = urljoin(self.sec_url.geturl(), join(*parts),)        
-        return url +'/' if not url.endswith("/") else url
+        url = urljoin(self.sec_url.geturl(), join(*parts))
+        return url if url.endswith('/') else url + '/'
 
     @wraps(requests.Session.request)
     def _request(self, method, url, *args, **kwargs):
@@ -52,17 +53,16 @@ class GeodesignHubClient:
     def get_project_bounds(self):
         return self._request("GET", join("projects", self.project_id, "bounds"))
 
+    def get_project_negotiation_logs(self):
+        return self._request(
+            "GET", join("projects", self.project_id, "negotiation_logs")
+        )
+
     def get_project_tags(self):
         return self._request("GET", join("projects", self.project_id, "tags"))
 
     def get_all_design_teams(self):
         return self._request("GET", join("projects", self.project_id, "cteams"))
-
-    def get_all_details_for_design_team(self, teamid: int):
-        assert isinstance(teamid, int), f"Team id is not an integer: {teamid}"
-        return self._request(
-            "GET", join("projects", self.project_id, "cteams", str(teamid))
-        )
 
     def get_single_synthesis(self, teamid: int, synthesisid: str):
         assert isinstance(teamid, int), f"Team id is not an integer: {teamid}"
@@ -143,6 +143,12 @@ class GeodesignHubClient:
         assert isinstance(teamid, int), f"Team id is not an integer: {teamid}"
         return self._request(
             "GET", join("projects", self.project_id, "cteams", str(teamid), "members")
+        )
+
+    def get_all_details_for_design_team(self, teamid: int):
+        assert isinstance(teamid, int), f"Team id is not an integer: {teamid}"
+        return self._request(
+            "GET", join("projects", self.project_id, "cteams", str(teamid))
         )
 
     def get_synthesis_system_projects(self, sysid: int, teamid: int, synthesisid: str):
@@ -310,3 +316,4 @@ class GeodesignHubClient:
         return self._request(
             "POST", join("projects", "create-igc-project"), json=project_create_payload
         )
+

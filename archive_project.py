@@ -68,8 +68,7 @@ def fetch_and_save_project_details(my_api_helper, project_directory, logger):
         all_project_details = all_projects_response.json()
         logger.info("Project data downloaded")
         all_projects_df = pd.DataFrame([all_project_details])
-        
-        
+
         logger.info("Writing Project data file to disk..")
         all_projects_df.to_csv(Path.joinpath(project_directory, "project.csv"))
         all_projects_df.name = "Project Details"
@@ -95,12 +94,11 @@ def fetch_and_save_systems(my_api_helper, project_directory, logger):
                 continue
             all_system_details.append(system_detail_response.json())
 
-        logger.info("Systems data downloaded")
         all_systems_df = pd.read_json(StringIO(json.dumps(all_system_details)))
         all_systems_df["Global_ID"] = [
             str(uuid.uuid4()) for _ in range(len(all_systems_df))
         ]
-        all_systems_df.name = "Systems"
+        all_systems_df = all_systems_df.rename(columns={"name": "system_name"})
         logger.info("Writing Systems file to disk..")
         all_systems_df.to_csv(Path.joinpath(project_directory, "systems.csv"))
         logger.info("Systems file written")
@@ -136,6 +134,8 @@ def fetch_and_save_design_teams(my_api_helper, project_directory, logger):
     all_design_team_response = my_api_helper.get_all_design_teams()
     if all_design_team_response.status_code == 200:
         all_design_teams = all_design_team_response.json()
+        all_design_teams_df = pd.read_json(StringIO(json.dumps(all_design_teams)))
+        all_design_teams_df.to_csv(Path.joinpath(project_directory, "design_teams.csv"))
         for design_team in all_design_teams:
             design_team_detail_response = my_api_helper.get_all_details_for_design_team(
                 design_team["id"]
@@ -149,17 +149,19 @@ def fetch_and_save_design_teams(my_api_helper, project_directory, logger):
             all_design_team_details.append(design_team_detail_response.json())
         flattened_details = []
         for team in all_design_team_details:
-            for synth in team.get('synthesis', []):
+            for synth in team.get("synthesis", []):
                 flattened_details.append(synth)
         all_design_team_details = flattened_details
         logger.info("Design Team data downloaded")
-        all_design_teams_df = pd.read_json(
+        all_designs_in_design_teams_df = pd.read_json(
             StringIO(json.dumps(all_design_team_details))
         )
-        all_design_teams_df.name = "Design Teams"
+        all_designs_in_design_teams_df.name = "Design Teams"
         logger.info("Writing Design Team file to disk..")
-        all_design_teams_df.to_csv(Path.joinpath(project_directory, "design_teams.csv"))
-        logger.info("Design Team file written")
+        all_designs_in_design_teams_df.to_csv(
+            Path.joinpath(project_directory, "designs_design_teams.csv")
+        )
+        logger.info("Design Team and Design team details file written")
     else:
         logger.error(
             "Error in getting Design Team data from Geodesignhub: %s"
@@ -176,7 +178,7 @@ def fetch_and_save_syntheses(
 ):
     all_design_syntheses_and_diagrams = []
     for current_team_synthesis in all_design_team_details:
-        
+
         current_team_id = int(current_team_synthesis["cteamid"])
         synthesis_id = current_team_synthesis["id"]
         synthesis_name = current_team_synthesis["description"]
@@ -185,17 +187,16 @@ def fetch_and_save_syntheses(
         )
         if synthesis_digrams_response.status_code != 200:
             logger.error(
-                "Error in getting Diagram Details %s"
-                % synthesis_digrams_response.text
+                "Error in getting Diagram Details %s" % synthesis_digrams_response.text
             )
             continue
         synthesis_and_diagrams = synthesis_digrams_response.json()
-        synthesis_and_diagrams['diagrams'] = ",".join(
-            [str(diagram) for diagram in synthesis_and_diagrams['diagrams']]
+        synthesis_and_diagrams["diagrams"] = ",".join(
+            [str(diagram) for diagram in synthesis_and_diagrams["diagrams"]]
         )
         synthesis_and_diagrams["description"] = synthesis_name
         all_design_syntheses_and_diagrams.append(synthesis_and_diagrams)
-    
+
     design_synthesis_details_df = pd.read_json(
         StringIO(json.dumps(all_design_syntheses_and_diagrams))
     )
@@ -220,22 +221,27 @@ def fetch_and_save_negotiation_logs(my_api_helper, project_directory, logger):
             StringIO(json.dumps(all_negotiation_logs["all_negotiations"]))
         )
         negotiation_logs_df.name = "Negotiation Logs"
-
+        # Check if dataframe is empty
+        if negotiation_logs_df.empty:
+            logger.info("No Negotiation Logs found for this project.")
+            return
         for index, log in negotiation_logs_df.iterrows():
             log_file_name = f"negotiation_log_{log['session_id']}.csv"
-            moves = log.get('moves', [])
+            moves = log.get("moves", [])
             moves_list = []
             for move in moves:
-                moves_list.append({
-                    'diagram': move['diagram'],
-                    'move': move['move'],
-                    'timestamp': move['timestamp']
-                })
+                moves_list.append(
+                    {
+                        "diagram": move["diagram"],
+                        "move": move["move"],
+                        "timestamp": move["timestamp"],
+                    }
+                )
             log_df = pd.DataFrame(moves_list)
             log_df.to_csv(Path.joinpath(project_directory, log_file_name), index=False)
 
         logger.info("Writing Negotiation Logs file to disk..")
-        negotiation_logs_df = negotiation_logs_df.drop(columns=['moves'])
+        negotiation_logs_df = negotiation_logs_df.drop(columns=["moves"])
         negotiation_logs_df.to_csv(
             Path.joinpath(project_directory, "negotiation_logs.csv")
         )

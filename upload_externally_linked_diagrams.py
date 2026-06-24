@@ -65,7 +65,7 @@ if __name__ == "__main__":
         my_api_helper = GeodesignHub.GeodesignHubClient(
             url=c["service_url"], project_id=project_id, token=c["api_token"]
         )
-        df = pd.read_csv("upload_data/ext_diagrams.csv")
+        df = pd.read_csv("upload_data/japan_diagrams_v3.csv")
 
         for index, row in df.iterrows():
             description = row["description"]
@@ -78,11 +78,13 @@ if __name__ == "__main__":
             # print(description, feature_type, funding_type, flat_geobuf_url, project_or_policy)
             response = my_api_helper.post_as_diagram_with_external_geometries(
                 url=flat_geobuf_url,
-                layer_type="fgb-layer",
+                layer_type="pmtiles-layer",
                 projectorpolicy=project_or_policy,
                 featuretype=feature_type,
                 description=description,
                 fundingtype=funding_type,
                 sysid=system_id,
+                cost=0,
+                cost_type="t",
             )
             print(response.json())

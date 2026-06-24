@@ -206,7 +206,7 @@ class GeodesignHubClient:
         sysid: str,
         fundingtype: str,
         cost: int,
-        costtype: str,
+        cost_type: str,
         additional_metadata: Optional[Dict[Any, Any]] = None,
     ):
         postdata = {
@@ -216,7 +216,7 @@ class GeodesignHubClient:
             "featuretype": featuretype,
             "fundingtype": fundingtype,
             "cost": cost,
-            "costtype": costtype,
+            "cost_type": cost_type,
             "additional_metadata": additional_metadata or {},
         }
         return self._request(
